@@ -6,3 +6,7 @@ type Customer struct {
 	PhoneNumber string `json:"phoneNumber"`
 	Address     string `json:"address"`
 }
+type UpdatedResponse struct {
+	Message string   `json:"message"`
+	Data    Customer `json:"data"`
+}

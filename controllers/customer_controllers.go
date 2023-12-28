@@ -4,6 +4,7 @@ import (
 	"challenge-goapi/config"
 	"challenge-goapi/models"
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -56,6 +57,7 @@ func CreateCustomer(c *gin.Context) {
 	query := "INSERT INTO customer (name,phone_number,address) VALUES ($1,$2,$3) RETURNING id"
 
 	var customerId string
+	fmt.Println(newCustomer)
 	err = db.QueryRow(query, newCustomer.Name, newCustomer.PhoneNumber, newCustomer.Address).Scan(&customerId)
 
 	if err != nil {
@@ -65,4 +67,31 @@ func CreateCustomer(c *gin.Context) {
 
 	newCustomer.Id = customerId
 	c.JSON(http.StatusCreated, newCustomer)
+}
+
+func UpdateCustomerById(c *gin.Context) {
+	customerId := c.Param("id")
+
+	var customer models.Customer
+
+	if err := c.ShouldBind(&customer); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	customer.Id = customerId
+
+	updateQuery := `UPDATE customer SET name = $2, phone_number = $3, address = $4 WHERE id = $1`
+	_, err := db.Exec(updateQuery, customerId, customer.Name, customer.PhoneNumber, customer.Address)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Customer"})
+		return
+	}
+
+	response := models.UpdatedResponse{
+		Message: "successfully updated customer",
+		Data:    customer,
+	}
+
+	c.JSON(http.StatusOK, response)
 }

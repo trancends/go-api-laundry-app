@@ -11,5 +11,6 @@ func RegisterCustomerRoutes(r *gin.Engine) {
 	{
 		customerGroup.GET("/", controllers.GetAllCustomer)
 		customerGroup.POST("/", controllers.CreateCustomer)
+		customerGroup.PUT("/:id", controllers.UpdateCustomerById)
 	}
 }
