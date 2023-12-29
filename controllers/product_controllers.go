@@ -10,15 +10,21 @@ import (
 )
 
 func GetAllProduct(c *gin.Context) {
-	query := "SELECT id,name,price,int FROM product"
+	searchName := c.Query("productName")
+	query := "SELECT id,name,price,unit FROM product"
 
 	var rows *sql.Rows
 	var err error
-
-	rows, err = db.Query(query)
+	if searchName != "" {
+		query += " WHERE name ILIKE '%' || $1 || '%'"
+		rows, err = db.Query(query, searchName)
+	} else {
+		rows, err = db.Query(query)
+	}
+	// rows, err = db.Query(query)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -27,7 +33,7 @@ func GetAllProduct(c *gin.Context) {
 	var products []models.Product
 	for rows.Next() {
 		var product models.Product
-		err := rows.Scan(&product.Id, &product.Name, &product.Price, product.Unit)
+		err := rows.Scan(&product.Id, &product.Name, &product.Price, &product.Unit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			return
@@ -35,9 +41,13 @@ func GetAllProduct(c *gin.Context) {
 
 		products = append(products, product)
 	}
+	response := models.CustomResponse{
+		Message: "Succcesfully Retreived Products",
+		Data:    products,
+	}
 
 	if len(products) > 0 {
-		c.JSON(http.StatusOK, products)
+		c.JSON(http.StatusOK, response)
 	} else {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product Not Found"})
 	}

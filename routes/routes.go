@@ -9,7 +9,7 @@ import (
 func RegisterCustomerRoutes(r *gin.Engine) {
 	customerGroup := r.Group("/customers")
 	{
-		customerGroup.GET("/", controllers.GetAllCustomer)
+		customerGroup.GET("", controllers.GetAllCustomer)
 		customerGroup.GET("/:id", controllers.GetCustomerById)
 		customerGroup.POST("/", controllers.CreateCustomer)
 		customerGroup.PUT("/:id", controllers.UpdateCustomerById)
@@ -18,9 +18,10 @@ func RegisterCustomerRoutes(r *gin.Engine) {
 }
 
 func RegisterProductRoutes(r *gin.Engine) {
+	// r.GET("/products", controllers.GetAllProduct)
 	productGroup := r.Group("/products")
 	{
-		productGroup.GET("/", controllers.GetAllProduct)
+		productGroup.GET("", controllers.GetAllProduct)
 		productGroup.GET("/:id", controllers.GetProductById)
 		productGroup.POST("/", controllers.CreateProduct)
 		productGroup.PUT("/:id", controllers.UpdateProductById)
