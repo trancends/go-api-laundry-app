@@ -88,7 +88,7 @@ func UpdateCustomerById(c *gin.Context) {
 		return
 	}
 
-	response := models.UpdatedResponse{
+	response := models.CustomResponse{
 		Message: "successfully updated customer",
 		Data:    customer,
 	}
