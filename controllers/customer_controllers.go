@@ -46,6 +46,26 @@ func GetAllCustomer(c *gin.Context) {
 	}
 }
 
+func GetCustomerById(c *gin.Context) {
+	id := c.Param("id")
+
+	var customer models.Customer
+
+	query := "SELECT id,name,phone_number,address FROM customer WHERE id = $1"
+
+	fmt.Println(customer)
+	err := db.QueryRow(query, id).Scan(&customer.Id, &customer.Name, &customer.PhoneNumber, &customer.Address)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Customer Not Found"})
+		return
+	}
+	response := models.CustomResponse{
+		Message: "successfully retreived customer",
+		Data:    customer,
+	}
+	c.JSON(http.StatusOK, response)
+}
+
 func CreateCustomer(c *gin.Context) {
 	var newCustomer models.Customer
 	err := c.ShouldBind(&newCustomer)
@@ -91,6 +111,24 @@ func UpdateCustomerById(c *gin.Context) {
 	response := models.CustomResponse{
 		Message: "successfully updated customer",
 		Data:    customer,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func DeleteCustomer(c *gin.Context) {
+	customerId := c.Param("id")
+
+	deleteQuery := `DELETE FROM customer  WHERE id = $1`
+	_, err := db.Exec(deleteQuery, customerId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := models.CustomResponse{
+		Message: "successfully deleted customer",
+		Data:    "OK",
 	}
 
 	c.JSON(http.StatusOK, response)
