@@ -10,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var db = config.ConnectDB()
-
 func GetAllCustomer(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	query := "SELECT id,name,phone_number,address FROM customer"
 
 	var rows *sql.Rows
@@ -30,7 +30,7 @@ func GetAllCustomer(c *gin.Context) {
 	var Customers []models.Customer
 	for rows.Next() {
 		var customer models.Customer
-		err := rows.Scan(&customer.Id, &customer.Name, &customer.PhoneNumber, customer.Address)
+		err := rows.Scan(&customer.ID, &customer.Name, &customer.PhoneNumber, customer.Address)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			return
@@ -47,6 +47,8 @@ func GetAllCustomer(c *gin.Context) {
 }
 
 func GetCustomerById(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	id := c.Param("id")
 
 	var customer models.Customer
@@ -54,7 +56,7 @@ func GetCustomerById(c *gin.Context) {
 	query := "SELECT id,name,phone_number,address FROM customer WHERE id = $1"
 
 	fmt.Println(customer)
-	err := db.QueryRow(query, id).Scan(&customer.Id, &customer.Name, &customer.PhoneNumber, &customer.Address)
+	err := db.QueryRow(query, id).Scan(&customer.ID, &customer.Name, &customer.PhoneNumber, &customer.Address)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer Not Found"})
 		return
@@ -67,6 +69,8 @@ func GetCustomerById(c *gin.Context) {
 }
 
 func CreateCustomer(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	var newCustomer models.Customer
 	err := c.ShouldBind(&newCustomer)
 	if err != nil {
@@ -85,11 +89,13 @@ func CreateCustomer(c *gin.Context) {
 		return
 	}
 
-	newCustomer.Id = customerId
+	newCustomer.ID = customerId
 	c.JSON(http.StatusCreated, newCustomer)
 }
 
 func UpdateCustomerById(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	customerId := c.Param("id")
 
 	var customer models.Customer
@@ -99,7 +105,7 @@ func UpdateCustomerById(c *gin.Context) {
 		return
 	}
 
-	customer.Id = customerId
+	customer.ID = customerId
 
 	updateQuery := `UPDATE customer SET name = $2, phone_number = $3, address = $4 WHERE id = $1`
 	_, err := db.Exec(updateQuery, customerId, customer.Name, customer.PhoneNumber, customer.Address)
@@ -117,6 +123,8 @@ func UpdateCustomerById(c *gin.Context) {
 }
 
 func DeleteCustomer(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	customerId := c.Param("id")
 
 	deleteQuery := `DELETE FROM customer  WHERE id = $1`

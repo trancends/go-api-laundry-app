@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"challenge-goapi/config"
 	"challenge-goapi/models"
 	"database/sql"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 )
 
 func GetAllProduct(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	searchName := c.Query("productName")
 	query := "SELECT id,name,price,unit FROM product"
 
@@ -33,7 +36,7 @@ func GetAllProduct(c *gin.Context) {
 	var products []models.Product
 	for rows.Next() {
 		var product models.Product
-		err := rows.Scan(&product.Id, &product.Name, &product.Price, &product.Unit)
+		err := rows.Scan(&product.ID, &product.Name, &product.Price, &product.Unit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			return
@@ -54,6 +57,8 @@ func GetAllProduct(c *gin.Context) {
 }
 
 func GetProductById(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	id := c.Param("id")
 
 	var product models.Product
@@ -61,7 +66,7 @@ func GetProductById(c *gin.Context) {
 	query := "SELECT id,name,price,unit FROM product WHERE id = $1"
 
 	fmt.Println(product)
-	err := db.QueryRow(query, id).Scan(&product.Id, &product.Name, &product.Price, &product.Unit)
+	err := db.QueryRow(query, id).Scan(&product.ID, &product.Name, &product.Price, &product.Unit)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product Not Found"})
 		return
@@ -74,6 +79,8 @@ func GetProductById(c *gin.Context) {
 }
 
 func CreateProduct(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	var newProduct models.Product
 	err := c.ShouldBind(&newProduct)
 	if err != nil {
@@ -91,7 +98,7 @@ func CreateProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	newProduct.Id = productId
+	newProduct.ID = productId
 
 	response := models.CustomResponse{
 		Message: "product successfully created",
@@ -102,6 +109,8 @@ func CreateProduct(c *gin.Context) {
 }
 
 func UpdateProductById(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	productId := c.Param("id")
 
 	var product models.Product
@@ -111,7 +120,7 @@ func UpdateProductById(c *gin.Context) {
 		return
 	}
 
-	product.Id = productId
+	product.ID = productId
 
 	updateQuery := `UPDATE product SET name = $2, price = $3, unit = $4 WHERE id = $1`
 	_, err := db.Exec(updateQuery, productId, product.Name, product.Price, product.Unit)
@@ -129,6 +138,8 @@ func UpdateProductById(c *gin.Context) {
 }
 
 func DeleteProduct(c *gin.Context) {
+	db := config.ConnectDB()
+	defer db.Close()
 	productId := c.Param("id")
 
 	deleteQuery := `DELETE FROM product  WHERE id = $1`
