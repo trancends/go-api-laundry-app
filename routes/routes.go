@@ -28,3 +28,10 @@ func RegisterProductRoutes(r *gin.Engine) {
 		productGroup.DELETE("/:id", controllers.DeleteProduct)
 	}
 }
+
+func RegisterTransactionRoutes(r *gin.Engine) {
+	transactionGroup := r.Group("/transactions")
+	{
+		transactionGroup.POST("", controllers.CreateTransaction)
+	}
+}

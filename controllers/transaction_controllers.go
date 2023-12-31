@@ -3,6 +3,7 @@ package controllers
 import (
 	"challenge-goapi/config"
 	"challenge-goapi/models"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -13,11 +14,12 @@ func CreateTransaction(c *gin.Context) {
 	db := config.ConnectDB()
 	defer db.Close()
 
-	var request models.Request
-	err := c.ShouldBind(request)
+	var request models.Transaction
+	err := c.ShouldBind(&request)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
+	fmt.Println(request)
 	// Validate the request data
 	if request.BillDate == "" || request.EntryDate == "" || request.FinishDate == "" || request.EmployeeID == "" || request.CustomerID == "" || len(request.BillDetails) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
@@ -45,48 +47,48 @@ func CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	billDate, _ := time.Parse("2006-01-02", request.BillDate)
-	entryDate, _ := time.Parse("2006-01-02", request.EntryDate)
-	finishDate, _ := time.Parse("2006-01-02", request.FinishDate)
-
-	// Create a new transaction in the database using a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to start transaction"})
-		return
-	}
-
-	// Insert the transaction record
-	var transactionID string
-	err = tx.QueryRow("INSERT INTO bill (bill_date, entry_date, finish_date, employee_id, customer_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-		billDate, entryDate, finishDate, request.EmployeeID, request.CustomerID).Scan(&transactionID)
-	if err != nil {
-		tx.Rollback()
-		c.JSON(500, gin.H{"error": "Failed to create transaction"})
-		return
-	}
-
-	// Insert the bill details
-	for _, billDetail := range request.BillDetails {
-		_, err = tx.Exec("INSERT INTO bill_detail (bill_id, product_id, quantity) VALUES ($1, $2, $3)",
-			transactionID, billDetail.Product.ID, billDetail.Qty)
-		if err != nil {
-			tx.Rollback()
-			c.JSON(500, gin.H{"error": "Failed to create bill detail"})
-			return
-		}
-	}
-
-	// Commit the transaction
-	err = tx.Commit()
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to commit"})
-	}
-	request.ID = transactionID
-	response := models.CustomResponse{
-		Message: "Transaction creatd successfully",
-		Data:    request,
-	}
-
-	c.JSON(http.StatusOK, response)
+	// billDate, _ := time.Parse("2006-01-02", request.BillDate)
+	// entryDate, _ := time.Parse("2006-01-02", request.EntryDate)
+	// finishDate, _ := time.Parse("2006-01-02", request.FinishDate)
+	//
+	// // Create a new transaction in the database using a transaction
+	// tx, err := db.Begin()
+	// if err != nil {
+	// 	c.JSON(500, gin.H{"error": "Failed to start transaction"})
+	// 	return
+	// }
+	//
+	// // Insert the transaction record
+	// var transactionID string
+	// err = tx.QueryRow("INSERT INTO bill (bill_date, entry_date, finish_date, employee_id, customer_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+	// 	billDate, entryDate, finishDate, request.EmployeeID, request.CustomerID).Scan(&transactionID)
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	c.JSON(500, gin.H{"error": "Failed to create transaction"})
+	// 	return
+	// }
+	//
+	// // Insert the bill details
+	// for _, billDetail := range request.BillDetails {
+	// 	_, err = tx.Exec("INSERT INTO bill_detail (bill_id, product_id, quantity) VALUES ($1, $2, $3)",
+	// 		transactionID, billDetail.Product.ID, billDetail.Qty)
+	// 	if err != nil {
+	// 		tx.Rollback()
+	// 		c.JSON(500, gin.H{"error": "Failed to create bill detail"})
+	// 		return
+	// 	}
+	// }
+	//
+	// // Commit the transaction
+	// err = tx.Commit()
+	// if err != nil {
+	// 	c.JSON(500, gin.H{"error": "Failed to commit"})
+	// }
+	// request.ID = transactionID
+	// response := models.CustomResponse{
+	// 	Message: "Transaction creatd successfully",
+	// 	Data:    request,
+	// }
+	//
+	// c.JSON(http.StatusOK, response)
 }

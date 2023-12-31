@@ -1,14 +1,14 @@
 package models
 
-type Request struct {
-	ID          string       `json:"id"`
-	BillDate    string       `json:"billDate"`
-	EntryDate   string       `json:"entryDate"`
-	FinishDate  string       `json:"finishDate"`
-	EmployeeID  string       `json:"employeeId"`
-	CustomerID  string       `json:"customerId"`
-	BillDetails []BillDetail `json:"billDetails"`
-}
+// type Request struct {
+// 	ID          string       `json:"id"`
+// 	BillDate    string       `json:"billDate"`
+// 	EntryDate   string       `json:"entryDate"`
+// 	FinishDate  string       `json:"finishDate"`
+// 	EmployeeID  string       `json:"employeeId"`
+// 	CustomerID  string       `json:"customerId"`
+// 	BillDetails []BillDetail `json:"billDetails"`
+// }
 
 // Employee represents an employee object
 type Employee struct {
@@ -19,11 +19,12 @@ type Employee struct {
 }
 
 type BillDetail struct {
-	ID           string  `json:"id"`
-	BillID       string  `json:"billId"`
-	Product      Product `json:"product"`
-	ProductPrice int     `json:"productPrice"`
-	Qty          int     `json:"qty"`
+	ID           string   `json:"id"`
+	BillID       string   `json:"billId"`
+	ProductID    string   `json:"productId,omitempty"`
+	Product      *Product `json:"product,omitempty"`
+	ProductPrice int      `json:"productPrice"`
+	Qty          int      `json:"qty"`
 }
 
 type Transaction struct {
@@ -31,8 +32,10 @@ type Transaction struct {
 	BillDate    string       `json:"billDate"`
 	EntryDate   string       `json:"entryDate"`
 	FinishDate  string       `json:"finishDate"`
-	Employee    Employee     `json:"employee"`
-	Customer    Customer     `json:"customer"`
+	EmployeeID  string       `json:"employeeId,omitempty"`
+	Employee    *Employee    `json:"employee,omitempty"`
+	CustomerID  string       `json:"CustomerID,omitempty"`
+	Customer    *Customer    `json:"customer,omitempty"`
 	BillDetails []BillDetail `json:"billDetails"`
 	TotalBill   int          `json:"totalBill"`
 }

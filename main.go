@@ -11,5 +11,6 @@ func main() {
 
 	routes.RegisterCustomerRoutes(router)
 	routes.RegisterProductRoutes(router)
+	routes.RegisterTransactionRoutes(router)
 	router.Run(":8080")
 }
