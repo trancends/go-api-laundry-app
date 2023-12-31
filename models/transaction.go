@@ -1,5 +1,15 @@
 package models
 
+type Request struct {
+	ID          string       `json:"id"`
+	BillDate    string       `json:"billDate"`
+	EntryDate   string       `json:"entryDate"`
+	FinishDate  string       `json:"finishDate"`
+	EmployeeID  string       `json:"employeeId"`
+	CustomerID  string       `json:"customerId"`
+	BillDetails []BillDetail `json:"billDetails"`
+}
+
 // Employee represents an employee object
 type Employee struct {
 	ID          string `json:"id"`
