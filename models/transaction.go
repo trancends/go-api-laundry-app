@@ -27,6 +27,15 @@ type BillDetail struct {
 	Qty          int      `json:"qty"`
 }
 
+type BillDetailJson struct {
+	ID           string `json:"id"`
+	Quantity     int    `json:"quantity"`
+	ProductID    string `json:"productId"`
+	ProductName  string `json:"productName"`
+	ProductUnit  string `json:"productUnit"`
+	ProductPrice int    `json:"productPrice"`
+}
+
 type Transaction struct {
 	ID          string       `json:"id"`
 	BillDate    string       `json:"billDate"`

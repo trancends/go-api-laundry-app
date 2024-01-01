@@ -34,6 +34,7 @@ func RegisterTransactionRoutes(r *gin.Engine) {
 	transactionGroup := r.Group("/transactions")
 	{
 		transactionGroup.GET("/:id", controllers.GetTransactionByID)
+		transactionGroup.GET("", controllers.GetTransaction)
 		transactionGroup.Use(middlewares.TransactionMiddelware)
 		transactionGroup.POST("", controllers.CreateTransaction)
 	}

@@ -91,7 +91,7 @@ func GetTransactionByID(c *gin.Context) {
 	// Retrieve the transaction record from the database
 	var transaction models.Transaction
 	rows, err := db.Query(`
-			SELECT t.id, to_char(t.bill_date, 'DD/MM/YYYY'), to_char(t.entry_date, 'DD/MM/YYYY'), to_char(t.finish_date, 'DD/MM/YYYY'),
+			SELECT t.id, to_char(t.bill_date, 'DD-MM-YYYY'), to_char(t.entry_date, 'DD-MM-YYYY'), to_char(t.finish_date, 'DD-MM-YYYY'),
 				e.id, e.name, e.phone_number, e.address,
 				c.id, c.name, c.phone_number, c.address,
 				bd.id, bd.product_id, p.name, p.price, p.unit, bd.quantity
@@ -212,28 +212,31 @@ func GetTransactionByID(c *gin.Context) {
 func GetTransaction(c *gin.Context) {
 	db := config.ConnectDB()
 	defer db.Close()
-	// Retrieve the transaction record from the database
-	var transaction models.Transaction
+
+	var transactions []models.Transaction
+
 	rows, err := db.Query(`
-			SELECT t.id, to_char(t.bill_date, 'DD/MM/YYYY'), to_char(t.entry_date, 'DD/MM/YYYY'), to_char(t.finish_date, 'DD/MM/YYYY'),
-				e.id, e.name, e.phone_number, e.address,
-				c.id, c.name, c.phone_number, c.address,
-				bd.id, bd.product_id, p.name, p.price, p.unit, bd.quantity
-			FROM bill t
-			JOIN employee e ON t.employee_id = e.id
-			JOIN customer c ON t.customer_id = c.id
-			JOIN bill_detail bd ON t.id = bd.bill_id
-			JOIN product p ON bd.product_id = p.id
-		`)
+  SELECT t.id, to_char(t.bill_date, 'DD/MM/YYYY'), to_char(t.entry_date, 'DD/MM/YYYY'), to_char(t.finish_date, 'DD/MM/YYYY'),
+         e.id, e.name, e.phone_number, e.address,
+         c.id, c.name, c.phone_number, c.address,
+         bd.id, bd.product_id, p.name, p.price, p.unit, bd.quantity
+  FROM bill t
+  JOIN employee e ON t.employee_id = e.id
+  JOIN customer c ON t.customer_id = c.id
+  JOIN bill_detail bd ON t.id = bd.bill_id
+  JOIN product p ON bd.product_id = p.id
+  ORDER BY t.id ASC
+`)
 	if err != nil {
-		// Failed to retrieve transaction
+		// Failed to retrieve transactions
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
 
+	var currentTransaction *models.Transaction
 	var billDetails []models.BillDetail
-	var transactions []models.Transaction
+
 	for rows.Next() {
 		var (
 			transactionID   string
@@ -281,54 +284,62 @@ func GetTransaction(c *gin.Context) {
 			return
 		}
 
-		transaction.ID = transactionID
-		transaction.BillDate = billDate
-		transaction.EntryDate = entryDate
-		transaction.FinishDate = finishDate
-		transaction.Employee = &models.Employee{
-			ID:          employeeID,
-			Name:        employeeName,
-			PhoneNumber: employeePhone,
-			Address:     employeeAddress,
-		}
-		transaction.Customer = &models.Customer{
-			ID:          customerID,
-			Name:        customerName,
-			PhoneNumber: customerPhone,
-			Address:     customerAddress,
+		// Check if we're starting a new transaction or adding to the current one
+		if currentTransaction == nil || transactionID != currentTransaction.ID {
+			if currentTransaction != nil {
+				// Finish the previous transaction
+				transactions = append(transactions, *currentTransaction)
+			}
+
+			// Start a new transaction
+			currentTransaction = &models.Transaction{
+				ID:         transactionID,
+				BillDate:   billDate,
+				EntryDate:  entryDate,
+				FinishDate: finishDate,
+				Employee: &models.Employee{
+					ID:          employeeID,
+					Name:        employeeName,
+					PhoneNumber: employeePhone,
+					Address:     employeeAddress,
+				}, // Initialize employee
+				Customer: &models.Customer{
+					ID:          customerID,
+					Name:        customerName,
+					PhoneNumber: customerPhone,
+					Address:     customerAddress,
+				}, // Initialize customer
+				BillDetails: billDetails,
+			}
+			billDetails = nil // Reset bill details for the new transaction
 		}
 
-		billDetail := models.BillDetail{
-			ID:     billDetailID,
-			BillID: transactionID,
+		// Add bill detail to the current transaction
+		billDetails = append(billDetails, models.BillDetail{
+			ID: billDetailID,
 			Product: &models.Product{
 				ID:    productID,
 				Name:  productName,
 				Price: productPrice,
 				Unit:  productUnit,
 			},
-			ProductPrice: productPrice,
-			Qty:          quantity,
-		}
-		billDetails = append(billDetails, billDetail)
+			Qty: quantity,
+		})
+
+	}
+	if currentTransaction != nil {
+		transactions = append(transactions, *currentTransaction)
+	}
+
+	// Calculate and set total bill for each transaction
+	for i := range transactions {
 		totalBill := 0
-		for _, billDetail := range billDetails {
-			totalBill += billDetail.ProductPrice * billDetail.Qty
+		for _, detail := range transactions[i].BillDetails {
+			totalBill += detail.Product.Price * detail.Qty
 		}
-		transaction.BillDetails = billDetails
-		transaction.TotalBill = totalBill
-		transactions = append(transactions, transaction)
+		transactions[i].TotalBill = totalBill
 	}
 
-	if err := rows.Err(); err != nil {
-		c.JSON(500, gin.H{"error": "Failed to retreive transaction"})
-		return
-	}
-
-	response := models.CustomResponse{
-		Message: "Transaction retrieved successfully",
-		Data:    transactions,
-	}
-
-	c.JSON(200, response)
+	// Handle success and return transactions
+	c.JSON(200, transactions)
 }
