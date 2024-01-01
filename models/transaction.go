@@ -37,5 +37,5 @@ type Transaction struct {
 	CustomerID  string       `json:"CustomerID,omitempty"`
 	Customer    *Customer    `json:"customer,omitempty"`
 	BillDetails []BillDetail `json:"billDetails"`
-	TotalBill   int          `json:"totalBill"`
+	TotalBill   int          `json:"totalBill,omitempty"`
 }

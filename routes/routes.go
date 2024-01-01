@@ -2,6 +2,7 @@ package routes
 
 import (
 	"challenge-goapi/controllers"
+	"challenge-goapi/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,6 +33,8 @@ func RegisterProductRoutes(r *gin.Engine) {
 func RegisterTransactionRoutes(r *gin.Engine) {
 	transactionGroup := r.Group("/transactions")
 	{
+		transactionGroup.GET("/:id", controllers.GetTransactionByID)
+		transactionGroup.Use(middlewares.TransactionMiddelware)
 		transactionGroup.POST("", controllers.CreateTransaction)
 	}
 }
