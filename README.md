@@ -25,7 +25,7 @@ After installing all the Requirements follow these steps to run the program
 
 1. open terminal and run the code below\
    ```console
-   git clone https://git.enigmacamp.com/enigma-20/benedictus-jullian-pradana/challenge-go-api.git
+   git clone https://git.enigmacamp.com/enigma-20/benedictus-jullian-pradana/challenge-goapi.git
    cd challenge-go-api
    code .
    ```
