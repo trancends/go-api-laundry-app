@@ -212,7 +212,7 @@ func GetTransaction(c *gin.Context) {
 	db := config.ConnectDB()
 	defer db.Close()
 
-	transactions := make(map[string]*models.Transaction)
+	transactionsMap := make(map[string]*models.Transaction)
 
 	rows, err := db.Query(`
   SELECT t.id, to_char(t.bill_date, 'DD/MM/YYYY'), to_char(t.entry_date, 'DD/MM/YYYY'), to_char(t.finish_date, 'DD/MM/YYYY'),
@@ -236,53 +236,89 @@ func GetTransaction(c *gin.Context) {
 	for rows.Next() {
 		var transaction models.Transaction
 		var billDetail models.BillDetail
+		var (
+			employeeID      string
+			employeeName    string
+			employeePhone   string
+			employeeAddress string
+			customerID      string
+			customerName    string
+			customerPhone   string
+			customerAddress string
+			productID       string
+			productName     string
+			productPrice    int
+			productUnit     string
+		)
 		err := rows.Scan(
 			&transaction.ID,
 			&transaction.BillDate,
 			&transaction.EntryDate,
 			&transaction.FinishDate,
-			&transaction.Employee.ID,
-			&transaction.Employee.Name,
-			&transaction.Employee.PhoneNumber,
-			&transaction.Employee.Address,
-			&transaction.Customer.ID,
-			&transaction.Customer.Name,
-			&transaction.Customer.PhoneNumber,
-			&transaction.Customer.Address,
+			&employeeID,
+			&employeeName,
+			&employeePhone,
+			&employeeAddress,
+			&customerID,
+			&customerName,
+			&customerPhone,
+			&customerAddress,
 			&billDetail.ID,
-			&billDetail.Product.ID,
-			&billDetail.Product.Name,
-			&billDetail.ProductPrice,
-			&billDetail.Product.Unit,
+			&productID,
+			&productName,
+			&productPrice,
+			&productUnit,
 			&billDetail.Qty,
 		)
 		billDetail.BillID = transaction.ID
+		billDetail.ProductPrice = productPrice
+		billDetail.Product = &models.Product{
+			ID:    productID,
+			Name:  productName,
+			Price: productPrice,
+			Unit:  productUnit,
+		}
+		transaction.Employee = &models.Employee{
+			ID:          employeeID,
+			Name:        employeeID,
+			PhoneNumber: employeePhone,
+			Address:     employeeAddress,
+		}
+		transaction.Customer = &models.Customer{
+			ID:          customerID,
+			Name:        customerName,
+			PhoneNumber: customerPhone,
+			Address:     customerAddress,
+		}
 		if err != nil {
 			// Failed to retrieve transaction
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 
-		if _, ok := transactions[transaction.ID]; !ok {
-			transactions[transaction.ID] = &transaction
+		if _, ok := transactionsMap[transaction.ID]; !ok {
+			transactionsMap[transaction.ID] = &transaction
 		}
-		transactions[transaction.ID].BillDetails = append(transactions[transaction.ID].BillDetails, billDetail)
+		transactionsMap[transaction.ID].BillDetails = append(transactionsMap[transaction.ID].BillDetails, billDetail)
 
 	}
-	transactionSlice := make([]models.Transaction, 0, len(transactions))
+	transactions := make([]models.Transaction, 0, len(transactionsMap))
 
 	// Calculate and set total bill for each transaction
 	index := 0
-	for _, transaction := range transactions {
-		transactionSlice = append(transactionSlice, *transaction)
+	for _, transaction := range transactionsMap {
+		transactions = append(transactions, *transaction)
 		totalBill := 0
-		for _, detail := range transactionSlice[index].BillDetails {
+		for _, detail := range transactions[index].BillDetails {
 			totalBill += detail.Product.Price * detail.Qty
 		}
-		transactionSlice[index].TotalBill = totalBill
+		transactions[index].TotalBill = totalBill
 		index++
 	}
 
 	// Handle success and return transactions
-	c.JSON(200, transactions)
+	c.JSON(200, models.CustomResponse{
+		Message: "success",
+		Data:    transactions,
+	})
 }

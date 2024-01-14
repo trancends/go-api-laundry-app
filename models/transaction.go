@@ -23,7 +23,7 @@ type BillDetail struct {
 	BillID       string   `json:"billId"`
 	ProductID    string   `json:"productId,omitempty"`
 	Product      *Product `json:"product,omitempty"`
-	ProductPrice int      `json:"productPrice"`
+	ProductPrice int      `json:"productPrice,omitempty"`
 	Qty          int      `json:"qty"`
 }
 
