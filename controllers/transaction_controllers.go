@@ -108,7 +108,6 @@ func GetTransactionByID(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-
 	var billDetails []models.BillDetail
 	for rows.Next() {
 		var (
@@ -213,7 +212,7 @@ func GetTransaction(c *gin.Context) {
 	db := config.ConnectDB()
 	defer db.Close()
 
-	var transactions []models.Transaction
+	transactions := make(map[string]*models.Transaction)
 
 	rows, err := db.Query(`
   SELECT t.id, to_char(t.bill_date, 'DD/MM/YYYY'), to_char(t.entry_date, 'DD/MM/YYYY'), to_char(t.finish_date, 'DD/MM/YYYY'),
@@ -234,110 +233,54 @@ func GetTransaction(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var currentTransaction *models.Transaction
-	var billDetails []models.BillDetail
-
 	for rows.Next() {
-		var (
-			transactionID   string
-			billDate        string
-			entryDate       string
-			finishDate      string
-			employeeID      string
-			employeeName    string
-			employeePhone   string
-			employeeAddress string
-			customerID      string
-			customerName    string
-			customerPhone   string
-			customerAddress string
-			billDetailID    string
-			productID       string
-			productName     string
-			productPrice    int
-			productUnit     string
-			quantity        int
-		)
+		var transaction models.Transaction
+		var billDetail models.BillDetail
 		err := rows.Scan(
-			&transactionID,
-			&billDate,
-			&entryDate,
-			&finishDate,
-			&employeeID,
-			&employeeName,
-			&employeePhone,
-			&employeeAddress,
-			&customerID,
-			&customerName,
-			&customerPhone,
-			&customerAddress,
-			&billDetailID,
-			&productID,
-			&productName,
-			&productPrice,
-			&productUnit,
-			&quantity,
+			&transaction.ID,
+			&transaction.BillDate,
+			&transaction.EntryDate,
+			&transaction.FinishDate,
+			&transaction.Employee.ID,
+			&transaction.Employee.Name,
+			&transaction.Employee.PhoneNumber,
+			&transaction.Employee.Address,
+			&transaction.Customer.ID,
+			&transaction.Customer.Name,
+			&transaction.Customer.PhoneNumber,
+			&transaction.Customer.Address,
+			&billDetail.ID,
+			&billDetail.Product.ID,
+			&billDetail.Product.Name,
+			&billDetail.ProductPrice,
+			&billDetail.Product.Unit,
+			&billDetail.Qty,
 		)
+		billDetail.BillID = transaction.ID
 		if err != nil {
 			// Failed to retrieve transaction
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Check if we're starting a new transaction or adding to the current one
-		if currentTransaction == nil || transactionID != currentTransaction.ID {
-			if currentTransaction != nil {
-				// Finish the previous transaction
-				transactions = append(transactions, *currentTransaction)
-			}
-
-			// Start a new transaction
-			currentTransaction = &models.Transaction{
-				ID:         transactionID,
-				BillDate:   billDate,
-				EntryDate:  entryDate,
-				FinishDate: finishDate,
-				Employee: &models.Employee{
-					ID:          employeeID,
-					Name:        employeeName,
-					PhoneNumber: employeePhone,
-					Address:     employeeAddress,
-				}, // Initialize employee
-				Customer: &models.Customer{
-					ID:          customerID,
-					Name:        customerName,
-					PhoneNumber: customerPhone,
-					Address:     customerAddress,
-				}, // Initialize customer
-				BillDetails: billDetails,
-			}
-			billDetails = nil // Reset bill details for the new transaction
+		if _, ok := transactions[transaction.ID]; !ok {
+			transactions[transaction.ID] = &transaction
 		}
-
-		// Add bill detail to the current transaction
-		billDetails = append(billDetails, models.BillDetail{
-			ID: billDetailID,
-			Product: &models.Product{
-				ID:    productID,
-				Name:  productName,
-				Price: productPrice,
-				Unit:  productUnit,
-			},
-			Qty: quantity,
-		})
+		transactions[transaction.ID].BillDetails = append(transactions[transaction.ID].BillDetails, billDetail)
 
 	}
-	if currentTransaction != nil {
-		transactions = append(transactions, *currentTransaction)
-	}
+	transactionSlice := make([]models.Transaction, 0, len(transactions))
 
 	// Calculate and set total bill for each transaction
-	for i := range transactions {
+	index := 0
+	for _, transaction := range transactions {
+		transactionSlice = append(transactionSlice, *transaction)
 		totalBill := 0
-		for _, detail := range transactions[i].BillDetails {
+		for _, detail := range transactionSlice[index].BillDetails {
 			totalBill += detail.Product.Price * detail.Qty
 		}
-		transactions[i].TotalBill = totalBill
+		transactionSlice[index].TotalBill = totalBill
+		index++
 	}
 
 	// Handle success and return transactions
